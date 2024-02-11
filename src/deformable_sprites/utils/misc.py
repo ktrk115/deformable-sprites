@@ -1,3 +1,4 @@
+import logging
 import os
 import glob
 import imageio
@@ -10,6 +11,8 @@ from argparse import Namespace
 
 from .flow_viz import flow_to_image
 
+logger = logging.getLogger(__name__)
+
 
 def move_to(item, device):
     if isinstance(item, torch.Tensor):
@@ -18,7 +21,7 @@ def move_to(item, device):
         return dict([(k, move_to(v, device)) for k, v in item.items()])
     if isinstance(item, (tuple, list)):
         return [move_to(x, device) for x in item]
-    print(type(item))
+    logger.debug(type(item))
     raise NotImplementedError
 
 
@@ -32,21 +35,21 @@ def get_unique_log_path(log_dir, resume):
 
 def load_checkpoint(path, **kwargs):
     if not os.path.isfile(path):
-        print("{} DOES NOT EXIST!".format(path))
+        logger.debug("{} DOES NOT EXIST!".format(path))
         return 0
-    print("RESUMING FROM", path)
+    logger.debug(f"RESUMING FROM {path}")
     ckpt = torch.load(path)
     start_iter = ckpt["i"]
     for name, module in kwargs.items():
         if name not in ckpt:
-            print("{} not saved in checkpoint, skipping".format(name))
+            logger.debug("{} not saved in checkpoint, skipping".format(name))
             continue
         module.load_state_dict(ckpt[name])
     return start_iter
 
 
 def save_checkpoint(path, i, **kwargs):
-    print("ITER {:6d} SAVING CHECKPOINT TO {}".format(i, path))
+    logger.debug("ITER {:6d} SAVING CHECKPOINT TO {}".format(i, path))
     save_dict = {name: module.state_dict() for name, module in kwargs.items()}
     save_dict["i"] = i
     torch.save(save_dict, path)
@@ -78,7 +81,7 @@ def save_vis_dict(out_dir, vis_dict, save_keys=[], skip_keys=[], overwrite=False
     :return the paths each tensor is saved to
     """
     if os.path.isdir(out_dir) and not overwrite:
-        print("{} exists already, skipping".format(out_dir))
+        logger.debug("{} exists already, skipping".format(out_dir))
         return
 
     if len(vis_dict) < 1:

@@ -1,7 +1,10 @@
+import logging
 import torch
 import torch.nn as nn
 
 from .. import utils
+
+logger = logging.getLogger(__name__)
 
 
 class PlanarMotion(nn.Module):
@@ -29,7 +32,7 @@ class PlanarMotion(nn.Module):
         ## last two extend to perspective
         init = torch.zeros(N, M, 8, dtype=torch.float32)
         self.register_parameter("theta", nn.Parameter(init, requires_grad=True))
-        print(f"Initialized planar motion with {N} params, {M} layers")
+        logger.debug(f"Initialized planar motion with {N} params, {M} layers")
 
         self.update_scale(scale)
         self.update_trans(trans)
@@ -65,7 +68,7 @@ class PlanarMotion(nn.Module):
             k = torch.sqrt(sx / sy)
             self.theta[..., 0:1] = s
             self.theta[..., 4:5] = k
-            print("updated scale")
+            logger.debug("updated scale")
 
     def update_trans(self, trans):
         """
@@ -73,7 +76,7 @@ class PlanarMotion(nn.Module):
         """
         with torch.no_grad():
             self.theta[..., 2:4] = trans
-            print("updated trans")
+            logger.debug("updated trans")
 
     def theta_to_mat(self, theta):
         """

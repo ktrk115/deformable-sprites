@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 
 import torch
@@ -6,6 +7,8 @@ import torch.nn.functional as F
 
 from . import utils
 from . import data
+
+logger = logging.getLogger(__name__)
 
 
 class ReconLoss(nn.Module):
@@ -135,7 +138,7 @@ class FlowGroupingLoss(nn.Module):
         ok, flow = batch_in["fwd"]
 
         if ok.sum() < 1:
-            print("NO FLOWS")
+            logger.debug("NO FLOWS")
             return None
 
         masks = batch_out["masks"][ok]
@@ -195,7 +198,7 @@ class FlowWarpLoss(nn.Module):
         """
 
         super().__init__()
-        print("Initializing flow warp loss with {} and {}".format(src_name, gap))
+        logger.debug("Initializing flow warp loss with {} and {}".format(src_name, gap))
         self.weight = weight
         self.tforms = tforms
         self.gap = gap
@@ -410,7 +413,9 @@ def get_loss_grad(batch_in, batch_out, loss_fncs, var_name, loss_name=None):
         pass
 
     if var.grad is None:
-        print("requested grad for {} wrt {} not available".format(loss_name, var_name))
+        logger.debug(
+            "requested grad for {} wrt {} not available".format(loss_name, var_name)
+        )
         return torch.zeros(*dims, 3, H, W, device=var.device), 0
 
     return utils.get_sign_image(var.grad.detach())

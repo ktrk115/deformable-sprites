@@ -1,3 +1,4 @@
+import logging
 import os
 import glob
 from functools import partial
@@ -13,6 +14,8 @@ from .loss import *
 
 
 DEVICE = torch.device("cuda")
+
+logger = logging.getLogger(__name__)
 
 
 def get_dataset(args):
@@ -115,7 +118,7 @@ def infer_model(
     run the model on all data points
     """
     out_name = None if label is None else f"{step_ct:08d}_val_{label}"
-    print("val step {:08d} saving to {}".format(step_ct, out_name))
+    logger.debug("val step {:08d} saving to {}".format(step_ct, out_name))
     out_dicts = []
     for batch in loader:
         batch = utils.move_to(batch, DEVICE)
@@ -164,7 +167,9 @@ def opt_infer_step(
     steps_total = n_epochs * len(loader) * batch_size
     val_epochs = max(1, steps_total // val_every)
     n_epochs_per_val = max(1, n_epochs // val_epochs)
-    print(f"running {val_epochs} train/val steps with {n_epochs_per_val} epochs each.")
+    logger.debug(
+        f"running {val_epochs} train/val steps with {n_epochs_per_val} epochs each."
+    )
 
     for _ in range(val_epochs):
         step = optimize_model(
@@ -206,9 +211,9 @@ def update_config(cfg, loader):
     # also update the vis and val frequency in iterations
     cfg.vis_every = max(cfg.vis_every, cfg.vis_epochs * N)
     cfg.val_every = max(cfg.val_every, cfg.val_epochs * N)
-    print("epochs_per_phase", cfg.epochs_per_phase)
-    print("vis_every", cfg.vis_every)
-    print("val_every", cfg.val_every)
+    logger.debug(f"epochs_per_phase {cfg.epochs_per_phase}")
+    logger.debug(f"vis_every {cfg.vis_every}")
+    logger.debug(f"val_every {cfg.val_every}")
     return cfg
 
 
@@ -225,7 +230,7 @@ def save_metric(out_dir, out_dict, name="ious"):
     vec = vec[ok]
     np.savetxt(os.path.join(out_dir, f"frame_{name}.txt"), vec)
     np.savetxt(os.path.join(out_dir, f"mean_{name}.txt"), vec.mean(dim=0))
-    print(name, vec.mean(dim=0))
+    logger.debug(f"{name} {vec.mean(dim=0)}")
 
 
 def compute_multiple_iou(batch_in, batch_out):
@@ -258,7 +263,7 @@ def compute_multiple_iou(batch_in, batch_out):
 def save_grid_vis(out_dir, vis_dict, pad=4):
     grid_keys = ["rgb", "recons", "layers", "texs", "view_vis"]
     if not all(x in vis_dict for x in grid_keys):
-        print(f"not all keys in vis_dict, cannot save to {out_dir}")
+        logger.debug(f"not all keys in vis_dict, cannot save to {out_dir}")
         return
 
     vis_dict = {k: v.detach().cpu() for k, v in vis_dict.items()}
@@ -285,7 +290,7 @@ def make_grid_vis(vis_dict, pad=4):
     """
     required = ["rgb", "recons", "layers", "texs", "view_vis"]
     if not all(x in vis_dict for x in required):
-        print(f"not all keys in vis_dict, cannot make grid vis")
+        logger.debug(f"not all keys in vis_dict, cannot make grid vis")
         return
 
     rgb = vis_dict["rgb"]

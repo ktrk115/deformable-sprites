@@ -1,8 +1,11 @@
+import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from .blocks import *
+
+logger = logging.getLogger(__name__)
 
 
 class UNet(nn.Module):
@@ -26,10 +29,10 @@ class UNet(nn.Module):
 
         ## init the last layer
         if init_std > 0:
-            print("init last zero")
+            logger.debug("init last zero")
             init_normal(self.dec.outc, std=init_std)
         else:
-            print("init last kaiming")
+            logger.debug("init last kaiming")
             init_kaiming(self.dec.outc)
 
     def forward(self, x, idx=None, ret_latents=False, **kwargs):
@@ -51,10 +54,10 @@ class Encoder(nn.Module):
 
         self.down_layers = nn.ModuleList([])
         for d_in, d_out in zip(self.in_dims, self.out_dims):
-            print("Down layer", d_in, d_out)
+            logger.debug(f"Down layer {d_in} {d_out}")
             self.down_layers.append(DownSkip(d_in, d_out, norm_fn=norm_fn, fac=fac))
 
-        print("INITIALIZING WEIGHTS")
+        logger.debug("INITIALIZING WEIGHTS")
         self.apply(init_kaiming)
 
     def forward(self, x):
@@ -79,7 +82,7 @@ class Decoder(nn.Module):
         self.up_layers = nn.ModuleList([])
         for d_skip in skip_dims:
             d_out = d_skip
-            print("Up layer", d_in, d_out)
+            logger.debug(f"Up layer {d_in} {d_out}")
             self.up_layers.append(UpSkip(d_in, d_skip, norm_fn=norm_fn, fac=fac))
             d_in = d_out + d_skip
             out_dims.append(d_in)
@@ -89,7 +92,7 @@ class Decoder(nn.Module):
         self.in_dims = dims[0:1] + out_dims[:-1]
         self.out_dims = out_dims
 
-        print("INITIALIZING WEIGHTS")
+        logger.debug("INITIALIZING WEIGHTS")
         self.apply(init_kaiming)
 
     def forward(self, x, dn_latents, ret_latents=False, **kwargs):

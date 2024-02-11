@@ -1,3 +1,4 @@
+import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,6 +8,8 @@ from .tex_gen import TexUNet
 from .trajectory import *
 
 from .. import utils
+
+logger = logging.getLogger(__name__)
 
 
 class SpriteModel(nn.Module):
@@ -171,10 +174,10 @@ class SpriteModel(nn.Module):
         if self.has_tex:
             fwd_set = self.dset.get_set("fwd")
             trans, scale, uv_range, ok = estimate_displacements(fwd_set, masks)
-            print("DISPLACEMENTS", ok)
-            print("SCALE", scale[0])
-            print("TRANS", trans[0])
-            print("UV_RANGE", uv_range)
+            logger.debug(f"DISPLACEMENTS {ok}")
+            logger.debug(f"SCALE {scale[0]}")
+            logger.debug(f"TRANS {trans[0]}")
+            logger.debug(f"UV_RANGE {uv_range}")
             self.tforms.update_trans(trans)
             self.tforms.update_scale(scale)
             return ok

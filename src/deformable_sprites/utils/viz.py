@@ -1,3 +1,4 @@
+import logging
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -5,6 +6,8 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
 import torchvision
+
+logger = logging.getLogger(__name__)
 
 
 def composite_rgba_checkers(masks, rgbs, n_rows=24, fac=0.2):
@@ -54,7 +57,7 @@ def get_rainbow(H, W, device=None):
 
 def get_grad_image(tensor):
     if tensor.grad is None:
-        print("requested grad is not available")
+        logger.debug("requested grad is not available")
         return None
     grad = tensor.grad.detach().cpu()  # (N, M, 1, H, W)
     sign_im, vmax = get_sign_image(grad)

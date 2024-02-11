@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import torch
 import torch.nn as nn
@@ -6,6 +7,8 @@ from . import blocks
 from .unet import UNet
 
 from .. import utils
+
+logger = logging.getLogger(__name__)
 
 
 class AlphaModel(nn.Module):
@@ -24,7 +27,7 @@ class AlphaModel(nn.Module):
         fg_shift = np.log(2 * n_remaining - 1)
         shift = torch.cat([fg_shift, torch.ones(1) * bg_shift])
         self.register_buffer("shift", shift.view(1, -1, 1, 1))
-        print("shifting zeros to", self.shift)
+        logger.debug(f"shifting zeros to {self.shift}")
 
         self.backbone = UNet(d_in, self.n_outputs, **net_args)
 

@@ -1,3 +1,4 @@
+import logging
 import os
 import glob
 import numpy as np
@@ -20,6 +21,8 @@ import torchvision.transforms as T
 
 from . import utils
 
+logger = logging.getLogger(__name__)
+
 
 def split_dataset_idcs(dset, n_val):
     """
@@ -38,7 +41,7 @@ def split_dataset_idcs(dset, n_val):
 
 def get_ordered_loader(dset, batch_size, preloaded):
     num_workers = batch_size if not preloaded else 0
-    print("DATALOADER NUM WORKERS", num_workers)
+    logger.debug("DATALOADER NUM WORKERS {}".format(num_workers))
     persistent_workers = True if num_workers > 0 else False
     return DataLoader(
         dset,
@@ -59,7 +62,7 @@ def get_subset_loader(dset, idcs, batch_size, preloaded):
     subset = Subset(dset, idcs)
     sampler = RandomSampler(subset, replacement=True, num_samples=len(dset))
     num_workers = batch_size if not preloaded else 0
-    print("DATALOADER NUM WORKERS", num_workers)
+    logger.debug(f"DATALOADER NUM WORKERS {num_workers}")
     persistent_workers = True if num_workers > 0 else False
     return DataLoader(
         dset,
@@ -74,7 +77,7 @@ def get_subset_loader(dset, idcs, batch_size, preloaded):
 def get_validation_loader(dset, batch_size, preloaded):
     # only return the indices with ground truth
     num_workers = batch_size if not preloaded else 0
-    print("DATALOADER NUM WORKERS", num_workers)
+    logger.debug(f"DATALOADER NUM WORKERS {num_workers}")
     persistent_workers = True if num_workers > 0 else False
     if dset.has_set("gt"):
         gt_dset = dset.get_set("gt")
@@ -101,7 +104,7 @@ def get_random_ordered_batch_loader(dset, batch_size, preloaded, min_batch_size=
     sampler = SubsetRandomSampler(idcs)  # sample randomly without replacement
     batch_sampler = OrderedBatchSampler(sampler, total_size, batch_size)
     num_workers = batch_size if not preloaded else 0
-    print("DATALOADER NUM WORKERS", num_workers)
+    logger.debug(f"DATALOADER NUM WORKERS {num_workers}")
     persistent_workers = True if num_workers > 0 else False
     return DataLoader(
         dset,
@@ -186,14 +189,14 @@ def match_custom_seq(root, subd, seq):
     """
     matches = glob.glob(f"{root}/{subd}/{seq}*")
     if len(matches) != 1:
-        print(
+        logger.debug(
             "sequence name {} has {} matches in {}/{}".format(
                 seq, len(matches), root, subd
             )
         )
         raise ValueError
     match = os.path.basename(matches[0])
-    print(f"found matching {match} for {seq}")
+    logger.debug(f"found matching {match} for {seq}")
     return match
 
 
@@ -260,7 +263,8 @@ class CompositeDataset(Dataset):
         self.names = check_names_dsets(dsets.values())
         self.dsets = dsets
 
-        print("DATASET LENGTHS:", {k: len(v) for k, v in self.dsets.items()})
+        _lenghts = {k: len(v) for k, v in self.dsets.items()}
+        logger.debug(f"DATASET LENGTHS: {_lenghts}")
         size = min([len(d) for d in self.dsets.values()])
 
         if idcs is None:
@@ -272,7 +276,7 @@ class CompositeDataset(Dataset):
 
     def set_device(self, device):
         self.device = device
-        print("SETTING DATASET DEVICE TO {}".format(device))
+        logger.debug("SETTING DATASET DEVICE TO {}".format(device))
 
     def __len__(self):
         return len(self.idcs)
@@ -314,14 +318,14 @@ class RGBDataset(Dataset):
         self.files = files[start:end]
 
         self.scale = scale
-        print(
+        logger.debug(
             "FOUND {} files in {}, using range {}-{}".format(
                 len(files), src_dir, start, end
             )
         )
         test = load_img_tensor(self.files[0], scale)
         self.height, self.width = test.shape[-2:]
-        print("RGB SCALE {} {}x{}".format(scale, self.width, self.height))
+        logger.debug("RGB SCALE {} {}x{}".format(scale, self.width, self.height))
 
     def __len__(self):
         return len(self.files)
@@ -355,18 +359,18 @@ class MaskDataset(Dataset):
         else:
             files = sorted(glob.glob("{}/*.png".format(subd)))
             self.names = [get_path_name(f) for f in files]
-            print("FOUND {} files in {}".format(len(files), subd))
+            logger.debug("FOUND {} files in {}".format(len(files), subd))
 
             self.scale = scale
             test = load_img_tensor(files[0], scale)
             self.height, self.width = test.shape[-2:]
-            print("MASK SCALE {} {}x{}".format(scale, self.width, self.height))
+            logger.debug("MASK SCALE {} {}x{}".format(scale, self.width, self.height))
 
         paths = [os.path.join(subd, "{}.png".format(name)) for name in self.names]
 
         self.is_valid = [os.path.isfile(path) for path in paths]
         self.val_idcs = [i for i, path in enumerate(paths) if os.path.isfile(path)]
-        print("FOUND {} matching masks in {}".format(len(self.val_idcs), gt_dir))
+        logger.debug("FOUND {} matching masks in {}".format(len(self.val_idcs), gt_dir))
 
     def __len__(self):
         return len(self.names)
@@ -405,12 +409,12 @@ class FlowDataset(Dataset):
         else:
             files = sorted(glob.glob("{}/*.flo".format(flow_dir)))
             self.names = [get_path_name(f) for f in files]
-            print("FOUND {} files in {}".format(len(files), flow_dir))
+            logger.debug("FOUND {} files in {}".format(len(files), flow_dir))
 
             self.scale = scale
             test = load_flow_tensor(files[0], scale)
             self.height, self.width = test.shape[-2:]
-            print("FLOW SCALE {} {}x{}".format(scale, self.width, self.height))
+            logger.debug("FLOW SCALE {} {}x{}".format(scale, self.width, self.height))
 
         if self.gap > 0:
             idcs = 0, len(self.names) - self.gap - 1
@@ -421,7 +425,9 @@ class FlowDataset(Dataset):
 
         self.files = [os.path.join(flow_dir, "{}.flo".format(n)) for n in valid_names]
         assert all(os.path.isfile(f) for f in self.files)
-        print("FOUND {} corresponding files in {}".format(len(self.files), flow_dir))
+        logger.debug(
+            "FOUND {} corresponding files in {}".format(len(self.files), flow_dir)
+        )
 
     def __len__(self):
         return len(self.names)
@@ -454,8 +460,8 @@ class OcclusionDataset(Dataset):
         self.height, self.width = self.fwd.height, self.fwd.width
         self.valid_fwd_range = fwd_dset.valid_idx_range
         self.valid_bck_range = bck_dset.valid_idx_range
-        print("VALID FWD RANGE", self.valid_fwd_range)
-        print("VALID BCK RANGE", self.valid_bck_range)
+        logger.debug(f"VALID FWD RANGE {self.valid_fwd_range}")
+        logger.debug(f"VALID BCK RANGE {self.valid_bck_range}")
 
     def __len__(self):
         return len(self.fwd)
@@ -552,7 +558,7 @@ class EpipolarDataset(Dataset):
         """
         save the fundamental mats and sampson errors to out_dir
         """
-        print("saving to", out_dir)
+        logger.debug(f"saving to {out_dir}")
         N = len(self)
         err_scales = []
         f_mats = []

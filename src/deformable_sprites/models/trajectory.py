@@ -1,3 +1,4 @@
+import logging
 from functools import partial
 
 import imageio
@@ -9,6 +10,8 @@ from .blocks import get_nl
 from .planar import PlanarMotion
 
 from .. import utils
+
+logger = logging.getLogger(__name__)
 
 
 def init_trajectory(dset, n_layers, local=False, **kwargs):
@@ -200,7 +203,7 @@ class BSplineTrajectory(PlanarTrajectory):
         active_local=True,
         bg_local=True,
         max_step=0.1,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(n_total, n_layers, t_step=t_step, **kwargs)
 
@@ -213,10 +216,10 @@ class BSplineTrajectory(PlanarTrajectory):
         nk_layers = n_layers if bg_local else n_layers - 1
         knots = torch.zeros(nk_layers, self.nk_t, nk_y, nk_x, 2)
         self.register_parameter("knots_3d", nn.Parameter(knots, requires_grad=True))
-        print(
+        logger.debug(
             "Initialized BSpline motion with {} knots".format((self.nk_t, nk_y, nk_x))
         )
-        print("knots_3d.shape:", knots.shape)
+        logger.debug(f"knots_3d.shape {knots.shape}")
 
         self.final_nl = get_nl(final_nl)
         max_step = torch.cat(
@@ -229,7 +232,7 @@ class BSplineTrajectory(PlanarTrajectory):
 
     def init_local_field(self):
         self.active_local = True
-        print("MOTION FIELD NOW LOCAL")
+        logger.debug("MOTION FIELD NOW LOCAL")
 
     def get_knots(self):
         knots = self.knots_3d.transpose(0, 1)  # (N, M, h, w, 2)
@@ -291,6 +294,5 @@ class BSplineTrajectory(PlanarTrajectory):
         t_rigid = self.get_rigid_transform(idx, grid)  # (B, M, H, W, 2)
         if self.active_local:
             t_local = self.get_local_offsets(idx, grid)  # (B, M, H, W, 2)
-            #             print(t_local.square().sum(dim=-1).mean())
             return t_rigid + t_local
         return t_rigid

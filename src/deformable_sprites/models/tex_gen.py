@@ -1,3 +1,4 @@
+import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,6 +7,8 @@ from .blocks import *
 from .unet import UNet
 
 from .. import utils
+
+logger = logging.getLogger(__name__)
 
 
 def resample_textures(texs, coords, random_comp=False):
@@ -55,7 +58,7 @@ class TexUNet(nn.Module):
         fac=2,
         norm_fn="batch",
         random_comp=True,
-        **kwargs
+        **kwargs,
     ):
         super().__init__()
 
@@ -64,7 +67,7 @@ class TexUNet(nn.Module):
         self.random_comp = random_comp
 
         tex_init = torch.rand(1, n_layers, self.d_code, *target_shape)
-        print("texture code shape", tex_init.shape)
+        logger.debug(f"texture code shape {tex_init.shape}")
         self.register_parameter("codes", nn.Parameter(tex_init, requires_grad=False))
 
         self.blocks = UNet(
