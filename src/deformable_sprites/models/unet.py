@@ -105,7 +105,7 @@ class Decoder(nn.Module):
 
 
 def get_unet_dims(n_levels, d_hidden):
-    dims = [d_hidden * 2 ** i for i in range(n_levels)]
+    dims = [d_hidden * 2**i for i in range(n_levels)]
     dims.append(dims[-1])
     return dims
 

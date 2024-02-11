@@ -8,10 +8,7 @@ import torch.nn.functional as F
 from .blocks import get_nl
 from .planar import PlanarMotion
 
-import sys
-
-sys.path.append("..")
-import utils
+from .. import utils
 
 
 def init_trajectory(dset, n_layers, local=False, **kwargs):

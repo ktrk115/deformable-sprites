@@ -5,10 +5,7 @@ import torch.nn.functional as F
 from .blocks import *
 from .unet import UNet
 
-import sys
-
-sys.path.append("..")
-import utils
+from .. import utils
 
 
 def resample_textures(texs, coords, random_comp=False):

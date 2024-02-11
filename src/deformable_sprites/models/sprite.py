@@ -6,10 +6,7 @@ from .alpha_pred import AlphaModel
 from .tex_gen import TexUNet
 from .trajectory import *
 
-import sys
-
-sys.path.append("..")
-import utils
+from .. import utils
 
 
 class SpriteModel(nn.Module):

@@ -1,10 +1,7 @@
 import torch
 import torch.nn as nn
 
-import sys
-
-sys.path.append("..")
-import utils
+from .. import utils
 
 
 class PlanarMotion(nn.Module):

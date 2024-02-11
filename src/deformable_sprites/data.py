@@ -18,7 +18,7 @@ from torch.utils.data import (
 )
 import torchvision.transforms as T
 
-import utils
+from . import utils
 
 
 def split_dataset_idcs(dset, n_val):
@@ -539,7 +539,7 @@ class EpipolarDataset(Dataset):
         F = torch.from_numpy(F.astype(np.float32))  # (3, 3)
         err = utils.compute_sampson_error(x1, x2, F).reshape(H, W)
         fac = (H + W) / 2
-        err = err * fac ** 2
+        err = err * fac**2
         if self.clip:  # either clip
             thresh = torch.quantile(err, 0.8)
             if thresh > self.reject:

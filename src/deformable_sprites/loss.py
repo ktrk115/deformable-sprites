@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import utils
-import data
+from . import utils
+from . import data
 
 
 class ReconLoss(nn.Module):
@@ -50,7 +50,7 @@ class ReconLoss(nn.Module):
         H, W = recon.shape[-2:]
         lap_err = sum(
             [
-                torch.abs(recon_lp[i] - target_lp[i]).sum() * (4 ** i)
+                torch.abs(recon_lp[i] - target_lp[i]).sum() * (4**i)
                 for i in range(self.n_levels)
             ]
         ) / (H * W)

@@ -6,10 +6,10 @@ import torch
 from torchvision.transforms import functional as TF
 from tqdm import tqdm
 
-import data
-import models
-import utils
-from loss import *
+from . import data
+from . import models
+from . import utils
+from .loss import *
 
 
 DEVICE = torch.device("cuda")

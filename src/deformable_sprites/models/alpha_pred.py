@@ -5,10 +5,7 @@ import torch.nn as nn
 from . import blocks
 from .unet import UNet
 
-import sys
-
-sys.path.append("..")
-import utils
+from .. import utils
 
 
 class AlphaModel(nn.Module):
