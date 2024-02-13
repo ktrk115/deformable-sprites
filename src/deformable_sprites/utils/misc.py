@@ -119,6 +119,8 @@ def save_vis_batch(out_dir, name, vis_batch, rescale=False, save_dir=False):
 
     if C == 2:  # is a flow map
         vis_batch = flow_to_image(vis_batch)
+    elif C == 1:
+        vis_batch = vis_batch.squeeze(-3)
 
     if rescale:
         vmax = vis_batch.amax(dim=(-1, -2), keepdim=True)
@@ -137,7 +139,10 @@ def save_batch_imgs(name, vis_batch, save_dir):
     vis_batch = vis_batch.detach().cpu()
     B, *dims, C, H, W = vis_batch.shape
     vis_batch = vis_batch.view(B, -1, C, H, W)
-    vis_batch = (255 * vis_batch.permute(0, 1, 3, 4, 2)).byte()
+    vis_batch = vis_batch.permute(0, 1, 3, 4, 2)
+    if C == 1:
+        vis_batch = vis_batch.squeeze(-1)
+    vis_batch = (255 * vis_batch).byte()
     M = vis_batch.shape[1]
 
     paths = []
@@ -159,7 +164,7 @@ def save_batch_imgs(name, vis_batch, save_dir):
 def save_img_dir(out, vis_batch):
     os.makedirs(out, exist_ok=True)
     for i in range(len(vis_batch)):
-        path = f"{out}/{j:05d}.png"
+        path = f"{out}/{i:05d}.png"
         imageio.imwrite(path, vis_batch[i])
 
 
