@@ -57,6 +57,7 @@ def optimize_model(
     writer=None,
     vis_every=0,
     vis_grad=False,
+    device=DEVICE,
     **kwargs,
 ):
     step_ct = start
@@ -65,7 +66,7 @@ def optimize_model(
     for _ in tqdm(range(n_epochs)):
         for batch in loader:
             model.optim.zero_grad()
-            batch = utils.move_to(batch, DEVICE)
+            batch = utils.move_to(batch, device)
             out_dict = model(batch, **model_kwargs)
             loss_dict = compute_losses(loss_fncs, batch, out_dict)
             step_ct += len(batch["idx"])
@@ -84,7 +85,7 @@ def optimize_model(
                 save_dir = "{:08d}_{}".format(step_ct, out_name)
                 if vis_grad:
                     out_dict = get_vis_batch(
-                        batch, model, model_kwargs, loss_fncs, vis_grad
+                        batch, model, model_kwargs, loss_fncs, vis_grad, device=device
                     )
                 utils.save_vis_dict(save_dir, out_dict)
 
@@ -92,9 +93,9 @@ def optimize_model(
 
 
 def get_vis_batch(
-    batch, model, model_kwargs={}, loss_fncs={}, vis_grad=False, **kwargs
+    batch, model, model_kwargs={}, loss_fncs={}, vis_grad=False, device=DEVICE, **kwargs
 ):
-    batch = utils.move_to(batch, DEVICE)
+    batch = utils.move_to(batch, device)
     out_dict = model(batch, vis=True, ret_inputs=True, **model_kwargs)
 
     # save mask gradients if loss functions
@@ -113,6 +114,7 @@ def infer_model(
     loss_fncs={},
     label=None,
     skip_keys=[],
+    device=DEVICE,
 ):
     """
     run the model on all data points
@@ -121,9 +123,9 @@ def infer_model(
     logger.debug("val step {:08d} saving to {}".format(step_ct, out_name))
     out_dicts = []
     for batch in loader:
-        batch = utils.move_to(batch, DEVICE)
+        batch = utils.move_to(batch, device)
         with torch.no_grad():
-            out_dict = get_vis_batch(batch, model, model_kwargs)
+            out_dict = get_vis_batch(batch, model, model_kwargs, device=device)
             out_dict = compute_multiple_iou(batch, out_dict)
 
         out_dicts.append(
@@ -155,6 +157,7 @@ def opt_infer_step(
     label="model",
     ckpt=None,
     save_grid=False,
+    device=DEVICE,
     **kwargs,
 ):
     """
@@ -180,12 +183,13 @@ def opt_infer_step(
             model_kwargs,
             start=step,
             label=label,
+            device=device,
             **kwargs,
         )
 
         utils.save_checkpoint(ckpt, step, model=model)
         val_dict, val_out_dir = infer_model(
-            step, val_loader, model, model_kwargs, loss_fncs, label=label
+            step, val_loader, model, model_kwargs, loss_fncs, label=label, device=device
         )
         save_res_img_dirs(val_out_dir, val_dict, ["masks"])
         if save_grid:
