@@ -18,7 +18,7 @@ def init_trajectory(dset, n_layers, local=False, **kwargs):
     N, H, W = len(dset), dset.height, dset.width
     if local:
         return BSplineTrajectory(N, n_layers, (H, W), **kwargs)
-    return PlanarTrajectory(n_total, n_layers, **kwargs)
+    return PlanarTrajectory(N, n_layers, **kwargs)
 
 
 def estimate_displacements(
