@@ -119,8 +119,6 @@ def save_vis_batch(out_dir, name, vis_batch, rescale=False, save_dir=False):
 
     if C == 2:  # is a flow map
         vis_batch = flow_to_image(vis_batch)
-    elif C == 1:
-        vis_batch = vis_batch.squeeze(-3)
 
     if rescale:
         vmax = vis_batch.amax(dim=(-1, -2), keepdim=True)
